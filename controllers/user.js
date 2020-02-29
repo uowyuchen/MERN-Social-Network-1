@@ -1,5 +1,7 @@
 const _ = require("lodash");
 const User = require("../models/user");
+const formidable = require("formidable");
+const fs = require("fs");
 
 // 把要更改的东西（比如一个user的profile）的userId放入req.profile中
 exports.userById = (req, res, next, id) => {
@@ -42,7 +44,7 @@ exports.allUsers = (req, res) => {
         error: err
       });
     }
-    res.json({ users: allUsers });
+    res.json(allUsers);
   }).select("name email updated created");
 };
 
@@ -54,19 +56,53 @@ exports.getSingleUser = (req, res) => {
 };
 
 // update user
+// exports.updateUser = (req, res) => {
+//   let user = req.profile;
+//   user = _.extend(user, req.body);
+//   user.updated = Date.now();
+//   user.save((err, savedUser) => {
+//     if (err) {
+//       return res.status(400).json({
+//         error: "You are not authorized to perfomr this action"
+//       });
+//     }
+//     savedUser.hashed_password = undefined;
+//     savedUser.salt = undefined;
+//     return res.json({ savedUser });
+//   });
+// };
+
 exports.updateUser = (req, res) => {
-  let user = req.profile;
-  user = _.extend(user, req.body);
-  user.updated = Date.now();
-  user.save((err, savedUser) => {
+  let form = new formidable.IncomingForm();
+  form.keepExtensions = true;
+  form.parse(req, (err, fields, files) => {
     if (err) {
       return res.status(400).json({
-        error: "You are not authorized to perfomr this action"
+        error: "Photo could not be uploaded"
       });
     }
-    savedUser.hashed_password = undefined;
-    savedUser.salt = undefined;
-    return res.json({ savedUser });
+    // update user with lodash.extend
+    let user = req.profile;
+    user = _.extend(user, fields);
+    user.updated = Date.now();
+
+    // 如果有photo就保存photo
+    if (files.photo) {
+      user.photo.data = fs.readFileSync(files.photo.path);
+      user.photo.contentType = files.photo.type;
+    }
+
+    // save user
+    user.save((err, savedUser) => {
+      if (err) {
+        return res.status(400).json({
+          error: err
+        });
+      }
+      user.hashed_password = undefined;
+      user.salt = undefined;
+      res.json(savedUser);
+    });
   });
 };
 
@@ -81,4 +117,14 @@ exports.deleteUser = (req, res) => {
     }
     return res.json({ message: "User deleted successfully" });
   });
+};
+
+// get user photo
+exports.userPhoto = (req, res, next) => {
+  // 如果user的profile里面有photo.data，说明已经上传⏫过avater了
+  if (req.profile.photo.data) {
+    res.set(("Content-Type", req.profile.photo.contentType));
+    return res.send(req.profile.photo.data);
+  }
+  next();
 };
