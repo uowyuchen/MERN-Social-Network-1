@@ -28,7 +28,19 @@ const userSchema = new mongoose.Schema({
     data: Buffer,
     contentType: String
   },
-  about: { type: String, trim: true }
+  about: { type: String, trim: true },
+  following: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User"
+    }
+  ],
+  followers: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User"
+    }
+  ]
 });
 
 /**
