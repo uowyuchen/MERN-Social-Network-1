@@ -10,9 +10,13 @@ const {
   addFollowing,
   addFollower,
   removeFollowing,
-  removeFollower
+  removeFollower,
+  findPeople
 } = require("../controllers/user");
 const { requireSignin } = require("../controllers/auth");
+
+router.put("/users/follow", requireSignin, addFollowing, addFollower);
+router.put("/users/unfollow", requireSignin, removeFollowing, removeFollower);
 
 // get all users
 router.get("/users", allUsers);
@@ -21,11 +25,8 @@ router.put("/users/:userId", requireSignin, updateUser);
 router.delete("/users/:userId", requireSignin, deleteUser);
 // get user photo
 router.get("/users/photo/:userId", userPhoto);
-
-// follow, 因为是update user的follower 和 following 所以是put
-router.put("/users/follow", requireSignin, addFollowing, addFollower);
-// remove following & follower
-router.put("/users/follow", requireSignin, removeFollowing, removeFollower);
+// who to follow
+router.get("/users/findpeople/:userId", requireSignin, findPeople);
 
 // we're looking for the prameter in the incoming URL
 router.param("userId", userById);

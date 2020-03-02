@@ -7,7 +7,7 @@ const fs = require("fs");
 exports.userById = (req, res, next, id) => {
   User.findById(id)
     .populate("following", "_id name")
-    .populate("follower", "_id name")
+    .populate("followers", "_id name")
     .exec((err, foundUser) => {
       if (err || !foundUser) {
         return res.status(400).json({ error: "User not found" });
@@ -133,43 +133,44 @@ exports.userPhoto = (req, res, next) => {
   next();
 };
 
-// follow unfollow
+// follow button: add following
 exports.addFollowing = (req, res, next) => {
   // 意思是登录的user的userId，去follows 另一个user，其id是followId
   // 就是登录的user去follow另一个user
+  console.log("1 add following");
   User.findByIdAndUpdate(
     req.body.userId,
     { $push: { following: req.body.followId } },
-    (err, foundUser) => {
+    (err, result) => {
       if (err) {
-        return res.status(400).json({
-          error: err
-        });
+        return res.status(400).json({ error: err });
       }
       next();
     }
   );
 };
-exports.addFollower = (req, res, next) => {
+// follow button: add follower
+exports.addFollower = (req, res) => {
   // 上面👆的方法执行结束，就要往followId这个user里面加一个follower
   // 那么，这个follower是就上面👆那个登录的user
+  console.log("2 add follower");
   User.findByIdAndUpdate(
     req.body.followId,
     { $push: { followers: req.body.userId } },
     { new: true }
   )
     .populate("following", "_id name")
-    .populate("follower", "_id name")
+    .populate("followers", "_id name")
     .exec((err, foundUser) => {
       if (err) {
         return res.status(400).json({
           error: err
         });
       }
+      foundUser.hashed_password = undefined;
+      foundUser.salt = undefined;
+      res.json(foundUser);
     });
-  foundUser.hashed_password = undefined;
-  foundUser.salt = undefined;
-  res.json(foundUser);
 };
 
 // remove following & follower
@@ -198,15 +199,31 @@ exports.removeFollower = (req, res, next) => {
     { new: true }
   )
     .populate("following", "_id name")
-    .populate("follower", "_id name")
+    .populate("followers", "_id name")
     .exec((err, foundUser) => {
       if (err) {
         return res.status(400).json({
           error: err
         });
       }
+      foundUser.hashed_password = undefined;
+      foundUser.salt = undefined;
+      res.json(foundUser);
     });
-  foundUser.hashed_password = undefined;
-  foundUser.salt = undefined;
-  res.json(foundUser);
+};
+
+exports.findPeople = (req, res) => {
+  let following = req.profile.following;
+  following.push(req.profile._id);
+  // console.log(following);
+  // 找到那些users 除了自己和自己已经following的那些人
+  User.find({ _id: { $nin: following } }, (err, users) => {
+    if (err) {
+      return res.status(400).json({
+        error: err
+      });
+    }
+    // console.log(users);
+    res.json(users);
+  }).select("name");
 };
