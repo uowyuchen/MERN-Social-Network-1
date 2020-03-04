@@ -22,9 +22,10 @@ exports.postById = (req, res, next, id) => {
 exports.getPosts = (req, res) => {
   Post.find()
     .populate("postedBy", "id name")
-    .select("id title body")
+    .select("id title body created")
+    .sort({ created: -1 })
     .then(posts => {
-      res.json({ posts: posts });
+      res.json(posts);
     })
     .catch(err => console.log(err));
 };
@@ -48,7 +49,7 @@ exports.createPost = (req, res) => {
 
     // 存照片
     if (files.photo) {
-      post.photo.data = fs.readFileSync(file.photo.path);
+      post.photo.data = fs.readFileSync(files.photo.path);
       post.photo.contentType = files.photo.type;
     }
 
@@ -74,7 +75,7 @@ exports.postsByUser = (req, res) => {
           error: err
         });
       }
-      res.json({ posts: foundPosts });
+      res.json(foundPosts);
     });
 };
 
@@ -108,16 +109,43 @@ exports.deletePost = (req, res) => {
 
 // update post
 exports.updatePost = (req, res) => {
-  let post = req.post;
-  post = _.extend(post, req.body);
-  console.log(post);
-
-  post.updated = Date.now();
-  post.save((err, savedPost) => {
+  let form = new formidable.IncomingForm();
+  form.keepExtensions = true;
+  form.parse(req, (err, fields, files) => {
     if (err) {
-      return res.status(400).json({ error: err });
+      return res.status(400).json({ error: "Photo could not be uploaded" });
     }
-    console.log("haha");
-    res.json(savedPost);
+    // save post
+    let post = req.post;
+    post = _.extend(post, fields);
+    post.updated = Date.now();
+
+    // save photo
+    if (files.photo) {
+      post.photo.data = fs.readFileSync(files.photo.path);
+      post.photo.contentType = files.photo.type;
+      console.log("haha");
+    }
+
+    post.save((err, savedPost) => {
+      if (err) {
+        return res.status(400).json({ error: err });
+      }
+      res.json(savedPost);
+    });
   });
+};
+
+// get post photo
+exports.postPhoto = (req, res) => {
+  // 设置好 image type；其实就是image.jpg的jpg
+  res.set("Content-Type", req.post.photo.contentType);
+  // 然后返回image数据，通过上面和下面的步骤，就能把二进制变成一张图片
+  return res.send(req.post.photo.data);
+};
+
+// get single post
+exports.singlePost = (req, res) => {
+  let post = req.post;
+  return res.json(post);
 };

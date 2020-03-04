@@ -8,7 +8,9 @@ const {
   postById,
   isPoster,
   deletePost,
-  updatePost
+  updatePost,
+  postPhoto,
+  singlePost
 } = require("../controllers/post");
 const { userById } = require("../controllers/user");
 const { requireSignin } = require("../controllers/auth");
@@ -20,9 +22,18 @@ router.post(
   createPost,
   createPostValidator
 );
+// get posts by a user
 router.get("/posts/by/:userId", requireSignin, postsByUser);
-router.delete("/post/:postId", requireSignin, isPoster, deletePost);
+// delete single post
+router.delete("/posts/:postId", requireSignin, isPoster, deletePost);
+// update a post
 router.put("/post/:postId", requireSignin, isPoster, updatePost);
+
+// get single post
+router.get("/post/:postId", singlePost);
+
+// get post photo
+router.get("/post/photo/:postId", postPhoto);
 
 // we're looking for the prameter in the incoming URL
 router.param("userId", userById);
