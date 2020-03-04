@@ -22,7 +22,7 @@ exports.postById = (req, res, next, id) => {
 exports.getPosts = (req, res) => {
   Post.find()
     .populate("postedBy", "id name")
-    .select("id title body created")
+    .select("id title body created likes")
     .sort({ created: -1 })
     .then(posts => {
       res.json(posts);
@@ -68,6 +68,7 @@ exports.createPost = (req, res) => {
 exports.postsByUser = (req, res) => {
   Post.find({ postedBy: req.profile.id })
     .populate("postedBy", "id name")
+    .select("id title body created likes")
     .sort("created")
     .exec((err, foundPosts) => {
       if (err) {
@@ -148,4 +149,36 @@ exports.postPhoto = (req, res) => {
 exports.singlePost = (req, res) => {
   let post = req.post;
   return res.json(post);
+};
+
+// like
+exports.like = (req, res) => {
+  Post.findByIdAndUpdate(
+    req.body.postId,
+    { $push: { likes: req.body.userId } },
+    { new: true }
+  ).exec((err, updatedPost) => {
+    if (err) {
+      return res.status(400).json({
+        error: err
+      });
+    }
+    res.json(updatedPost);
+  });
+};
+
+// like
+exports.unlike = (req, res) => {
+  Post.findByIdAndUpdate(
+    req.body.postId,
+    { $pull: { likes: req.body.userId } },
+    { new: true }
+  ).exec((err, updatedPost) => {
+    if (err) {
+      return res.status(400).json({
+        error: err
+      });
+    }
+    res.json(updatedPost);
+  });
 };
