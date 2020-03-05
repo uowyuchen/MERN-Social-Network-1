@@ -66,7 +66,7 @@ exports.requireSignin = expressJwt({
   userProperty: "auth"
 });
 
-// add forgotPassword method
+// forgot password
 exports.forgotPassword = (req, res) => {
   if (!req.body) return res.status(400).json({ message: "No request body" });
   if (!req.body.email)
@@ -143,5 +143,51 @@ exports.resetPassword = (req, res) => {
         message: `Great! Now you can login with your new password.`
       });
     });
+  });
+};
+
+// social login
+exports.socialLogin = (req, res) => {
+  // try signup by finding user with req.email
+  User.findOne({ email: req.body.email }, (err, user) => {
+    if (err || !user) {
+      // create a new user and login
+      // 这个user信息就是从Google那里拿的user的gmail，name等信息
+      user = new User(req.body);
+      req.profile = user;
+      // console.log("1", user);
+      // console.log("2", req.profile);
+      user.save();
+
+      // generate a token with user id and secret
+      const token = jwt.sign(
+        { id: user.id, iss: "NODEAPI" },
+        process.env.JWT_SECRET
+      );
+
+      res.cookie("t", token, { expire: new Date() + 9999 });
+
+      // return response with user and token to frontend client
+      const { id, name, email } = user;
+      return res.json({ token, user: { id, name, email } });
+    } else {
+      // update existing user with new social info and login
+      // 意思是一旦这个人的Google改名字了，所以重新拿一边这个user的信息
+      req.profile = user;
+      user = _.extend(user, req.body);
+      user.updated = Date.now();
+      //console.log("3", user);
+      //console.log("4", req.profile);
+      user.save();
+      // generate a token with user id and secret
+      const token = jwt.sign(
+        { id: user.id, iss: "NODEAPI" },
+        process.env.JWT_SECRET
+      );
+      res.cookie("t", token, { expire: new Date() + 9999 });
+      // return response with user and token to frontend client
+      const { id, name, email } = user;
+      return res.json({ token, user: { id, name, email } });
+    }
   });
 };
