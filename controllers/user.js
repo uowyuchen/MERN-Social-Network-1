@@ -30,7 +30,9 @@ exports.userById = (req, res, next, id) => {
 
 // 这个意思是 有权利做更改了！因为登录的userId和需要修改的东西的userId是一样的！
 exports.hasAuthorization = (req, res, next) => {
-  const authorized = req.profile && req.auth && req.profile.id === req.auth.id;
+  let sameUser = req.profile && req.auth && req.profile.id == req.auth.id;
+  let adminUser = req.profile && req.auth && req.auth.role === "admin";
+  let authorized = sameUser || adminUser;
   if (!authorized) {
     return res.status(403).json({
       error: "User is not authorized to perform this action"
@@ -48,7 +50,7 @@ exports.allUsers = (req, res) => {
       });
     }
     res.json(allUsers);
-  }).select("name email updated created");
+  }).select("name email updated created role");
 };
 
 // get single user

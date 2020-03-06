@@ -11,7 +11,8 @@ const {
   addFollower,
   removeFollowing,
   removeFollower,
-  findPeople
+  findPeople,
+  hasAuthorization
 } = require("../controllers/user");
 const { requireSignin } = require("../controllers/auth");
 
@@ -21,8 +22,8 @@ router.put("/users/unfollow", requireSignin, removeFollowing, removeFollower);
 // get all users
 router.get("/users", allUsers);
 router.get("/users/:userId", requireSignin, getSingleUser);
-router.put("/users/:userId", requireSignin, updateUser);
-router.delete("/users/:userId", requireSignin, deleteUser);
+router.put("/users/:userId", requireSignin, hasAuthorization, updateUser);
+router.delete("/users/:userId", requireSignin, hasAuthorization, deleteUser);
 // get user photo
 router.get("/users/photo/:userId", userPhoto);
 // who to follow

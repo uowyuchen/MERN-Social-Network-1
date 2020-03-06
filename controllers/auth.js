@@ -42,13 +42,16 @@ exports.signin = (req, res) => {
 
     // generate a token with user id and secret
     // 基于user的id 和 我们自己设置的secret 来生成token
-    const token = jwt.sign({ id: foundUser.id }, process.env.JWT_SECRET);
+    const token = jwt.sign(
+      { id: foundUser.id, role: foundUser.role },
+      process.env.JWT_SECRET
+    );
 
     // persist the token as 't' in cookie with exiry date
     res.cookie("t", token, { expire: new Date() + 9999 });
     // return response with user and token to frontend client
-    const { id, name, email } = foundUser;
-    return res.json({ token, user: { id, name, email } });
+    const { id, name, email, role } = foundUser;
+    return res.json({ token, user: { id, name, email, role } });
   });
 };
 

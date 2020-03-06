@@ -7,7 +7,7 @@ const fs = require("fs");
 exports.postById = (req, res, next, id) => {
   Post.findById(id)
     .populate("postedBy", "_id name")
-    .populate("comments.postedBy", "_id name")
+    .populate("comments.postedBy", "_id name role")
     .exec((err, foundPost) => {
       if (err || !foundPost) {
         return res.status(400).json({
@@ -93,7 +93,9 @@ exports.isPoster = (req, res, next) => {
       userProperty: "auth"
     });
    */
-  let isPoster = req.post && req.auth && req.post.postedBy.id === req.auth.id;
+  let sameUser = req.post && req.auth && req.post.postedBy.id == req.auth.id;
+  let adminUser = req.post && req.auth && req.auth.role === "admin";
+  let isPoster = sameUser || adminUser;
   if (!isPoster) {
     return res.status(403).json({ error: "User is not authorized" });
   }
